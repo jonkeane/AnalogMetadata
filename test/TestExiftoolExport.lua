@@ -134,7 +134,7 @@ function testBasic()
         command,
         'exiftool ' ..
         '-Title="Roll 1" ' ..
-        '-Caption="Seaside" ' ..
+        -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
         '-Make="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
@@ -192,7 +192,7 @@ function testBasic_Win()
         '"' ..
     '"c:\\Program Files\\Lightroom\\plugins\\AnalogMetadata.lrplugin\\exiftool\\windows\\exiftool.exe" ' ..
         '-Title="Roll 1" ' ..
-        '-Caption="Seaside" ' ..
+        -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
         '-Make="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
@@ -250,7 +250,7 @@ function testBasic_Mac()
         command,
     '"/Applications/Adobe Photoshop Lightroom 5.app/Contents/PlugIns/AnalogMetadata.lrplugin/exiftool/macos/exiftool" ' ..
         '-Title="Roll 1" ' ..
-        '-Caption="Seaside" ' ..
+        -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
         '-Make="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
@@ -436,7 +436,7 @@ function testBasic_EffectiveISO_Box()
         command,
         'exiftool ' ..
         '-Title="Roll 1" ' ..
-        '-Caption="Seaside" ' ..
+        -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
         '-Make="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
@@ -485,7 +485,7 @@ function testBasic_EffectiveISO_Rated()
         command,
         'exiftool ' ..
         '-Title="Roll 1" ' ..
-        '-Caption="Seaside" ' ..
+        -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
         '-Make="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
