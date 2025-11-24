@@ -4,7 +4,7 @@ local LrTasks = import 'LrTasks'
 require 'Use'
 local log = require 'Logger' ('export')
 
-local MetadataPatch = use 'analog.MetadataPatch'
+local AnalogMetadata = use 'analog.AnalogMetadata'
 local exiftool = use 'analog.ExiftoolBuilder'
 local DefaultMetadataMap = use 'analog.DefaultMetadataMap'
 local ExportDialogSection = use 'analog.ExportDialogSection'
@@ -30,7 +30,7 @@ local function postProcessRenderedPhotos (functionContext, filterContext)
 
             local command = builder:buildCommand (
                 sourceRendition.destinationPath,
-                MetadataPatch.make (sourceRendition.photo)
+                AnalogMetadata.make (sourceRendition.photo)
             )
 			if command then
 				local exiftoolResult = LrTasks.execute (command)

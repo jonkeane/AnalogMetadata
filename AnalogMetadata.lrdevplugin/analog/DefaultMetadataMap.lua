@@ -1,7 +1,7 @@
 local DefaultMetadataMap = {
 
     {key = "Title", val = "Roll_Name"},
-    {key = "Caption", val = "Frame_Locality"},
+    -- {key = "Caption", val = "Frame_Locality"},
     {key = "UserComment", val = "Frame_Comment"},
     {key = "Make", val = "Frame_EmulsionName"},
     {key = "Model", val = "Roll_CameraName"},

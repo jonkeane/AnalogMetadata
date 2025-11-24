@@ -24,7 +24,7 @@ local function make(f, propertyTable)
                     fill_horizontal = 1
                 },
                 f:static_text {
-                    title = "to",
+                    title = "←",
                     font = "<system/bold>"
                 },
                 f:static_text {
