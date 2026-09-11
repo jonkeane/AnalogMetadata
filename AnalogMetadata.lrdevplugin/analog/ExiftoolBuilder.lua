@@ -1,66 +1,76 @@
-local log = require 'Logger' ("ExiftoolBuilder")
+local log = require 'Logger' ('ExiftoolBuilder')
 
-local ExiftoolBuilder = {
+local ExiftoolBuilder = {}
+ExiftoolBuilder.__index = ExiftoolBuilder
 
-}
+-- Metadata and image paths go in an argument file, never through the shell.
+-- CSTR preserves newlines and leading spaces without allowing extra arguments.
+local function argumentLine(value)
+    return '#[CSTR]' .. tostring(value):gsub('\\', '\\\\'):gsub('\r', '\\r'):gsub('\n', '\\n')
+end
 
-function ExiftoolBuilder:buildCommand (photoPath, meta)
+local function quotePath(path)
+    if WIN_ENV then
+        -- These characters cannot safely be passed through cmd.exe.
+        assert(not path:find('["%%!\r\n]'), 'Unsupported character in ExifTool command path')
+        return '"' .. path .. '"'
+    end
+    return '"' .. path:gsub('([\\"$`])', '\\%1') .. '"'
+end
+
+function ExiftoolBuilder:buildArguments(photoPath, meta)
+    local arguments = { '-charset', 'UTF8', '-charset', 'filename=UTF8' }
     local empty = true
-    local command = self.exiftoolPath
-
-    log ('Exiftool: Mapping: ', #self.metadataMap)
-
-    for _, pair in ipairs (self.metadataMap) do
-        log ("Pair: ", pair)
+    for _, pair in ipairs(self.metadataMap) do
         if pair.key and pair.val then
             local getter = meta[pair.val]
-            if getter then
-                local val = getter (meta)
-                if val then
-                    log ('Val: ', val)
-                    command = command .. " " .. string.format ("-%s=\"%s\"", pair.key, val)
+            local value = getter and getter(meta)
+            if value ~= nil and value ~= false then
+                value = tostring(value)
+                -- Blank film stock must not clear existing Film or Make metadata.
+                if pair.val ~= 'Frame_EmulsionName' or value:find('%S') then
+                    table.insert(arguments, '-' .. pair.key .. '=' .. value)
                     empty = false
                 end
             end
         end
     end
+    if empty then return nil end
+    table.insert(arguments, '-overwrite_original')
+    table.insert(arguments, '--')
+    table.insert(arguments, photoPath)
+    return arguments
+end
 
-    if empty then
-        return nil
+function ExiftoolBuilder:argumentFileContents(arguments)
+    local lines = {}
+    for _, argument in ipairs(arguments) do
+        table.insert(lines, argumentLine(argument))
     end
+    return table.concat(lines, '\n') .. '\n'
+end
 
-    command = command .. " -overwrite_original " .. "\"" .. photoPath .. "\""
-
-    if WIN_ENV then
-        command = "\"" .. command .. "\""
-    end
-
-    log (command)
-
+function ExiftoolBuilder:buildCommand(argumentFilePath)
+    -- ExifTool requires -config to be the first argument, outside the argfile.
+    local command = quotePath(self.exiftoolPath) .. ' -config ' .. quotePath(self.configPath)
+        .. ' -@ ' .. quotePath(argumentFilePath)
+    if WIN_ENV then command = '"' .. command .. '"' end
+    log(command)
     return command
 end
 
-function ExiftoolBuilder:make (metadataMap)
-    local builder = {}
-    setmetatable (builder, self)
-    self.__index = self
-
+local function make(metadataMap)
+    local root = _PLUGIN and _PLUGIN.path or 'AnalogMetadata.lrdevplugin'
+    local builder = setmetatable({ metadataMap = metadataMap }, ExiftoolBuilder)
     if MAC_ENV then
-        builder.exiftoolPath = string.format ("\"%s/%s\"", _PLUGIN.path, "exiftool/macos/exiftool")
+        builder.exiftoolPath = root .. '/exiftool/macos/exiftool'
     elseif WIN_ENV then
-        builder.exiftoolPath = string.format ("\"%s\\%s\"", _PLUGIN.path, "exiftool\\windows\\exiftool.exe")
+        builder.exiftoolPath = root .. '\\exiftool\\windows\\exiftool.exe'
     else
-        builder.exiftoolPath = "exiftool"
+        builder.exiftoolPath = 'exiftool'
     end
-
-    log ('Exiftool: path: ', builder.exiftoolPath)
-
-    builder.metadataMap = metadataMap
+    builder.configPath = root .. (WIN_ENV and '\\' or '/') .. 'analog-film-exiftool.config'
     return builder
 end
 
-return {
-    make = function (metadataMap)
-        return ExiftoolBuilder:make (metadataMap)
-    end
-}
+return { make = make }

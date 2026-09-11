@@ -3,6 +3,21 @@ local exiftool = require 'analog.ExiftoolBuilder'
 local AnalogMetadata = require 'analog.AnalogMetadata'
 local DefaultMetadataMap = require 'analog.DefaultMetadataMap'
 
+-- Render the structured arguments for the existing field-mapping assertions.
+local function formatArguments(builder, photoPath, meta)
+    local args = builder:buildArguments(photoPath, meta)
+    if not args then return nil end
+    local command = builder.exiftoolPath == 'exiftool' and 'exiftool'
+        or '"' .. builder.exiftoolPath .. '"'
+    for i = 5, #args - 3 do
+        local key, value = args[i]:match('^(.-)=(.*)$')
+        command = command .. ' ' .. key .. '="' .. value .. '"'
+    end
+    command = command .. ' -overwrite_original "' .. photoPath .. '"'
+    if WIN_ENV then command = '"' .. command .. '"' end
+    return command
+end
+
 local function withGlobal (env, func)
     for _, pair in ipairs (env) do
         _G[pair[1]] = pair[2]
@@ -20,7 +35,7 @@ end
 function testNegativeLongitude()
     local builder = exiftool.make (DefaultMetadataMap)
 
-    command = builder:buildCommand (
+    command = formatArguments(builder,
         "1.jpg",
     AnalogMetadata.make (
             {
@@ -39,7 +54,7 @@ end
 function testNegativeLatitude()
     local builder = exiftool.make (DefaultMetadataMap)
 
-    command = builder:buildCommand (
+    command = formatArguments(builder,
         "1.jpg",
     AnalogMetadata.make (
             {
@@ -59,7 +74,7 @@ function testNegativeLatitudeLongitude()
     local builder = exiftool.make (DefaultMetadataMap)
 
     command =
-        builder:buildCommand(
+        formatArguments(builder,
         "1.jpg",
     AnalogMetadata.make(
             {
@@ -79,7 +94,7 @@ function testNoLocation()
     local builder = exiftool.make (DefaultMetadataMap)
 
     command =
-        builder:buildCommand(
+        formatArguments(builder,
         "1.jpg",
     AnalogMetadata.make(
             {
@@ -100,7 +115,7 @@ function testEmpty()
     local builder = exiftool.make (DefaultMetadataMap)
 
     local meta = AnalogMetadata.make ({})
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertNil (command)
 end
@@ -128,7 +143,7 @@ function testBasic()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertEquals(
         command,
@@ -136,7 +151,7 @@ function testBasic()
         '-Title="Roll 1" ' ..
         -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
-        '-Make="Kodak Gold" ' ..
+        '-XMP-AnalogExif:Film="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
         '-GPSLatitude="51.2322" ' ..
         '-GPSLatitudeRef="N" ' ..
@@ -183,7 +198,7 @@ function testBasic_Win()
         },
         function ()
             local builder = exiftool.make (DefaultMetadataMap)
-            command = builder:buildCommand ("1.jpg", meta)
+            command = formatArguments(builder, "1.jpg", meta)
         end
     )
 
@@ -194,7 +209,7 @@ function testBasic_Win()
         '-Title="Roll 1" ' ..
         -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
-        '-Make="Kodak Gold" ' ..
+        '-XMP-AnalogExif:Film="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
         '-GPSLatitude="51.2322" ' ..
         '-GPSLatitudeRef="N" ' ..
@@ -242,7 +257,7 @@ function testBasic_Mac()
         },
         function ()
             local builder = exiftool.make (DefaultMetadataMap)
-            command = builder:buildCommand ("1.jpg", meta)
+            command = formatArguments(builder, "1.jpg", meta)
         end
     )
 
@@ -252,7 +267,7 @@ function testBasic_Mac()
         '-Title="Roll 1" ' ..
         -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
-        '-Make="Kodak Gold" ' ..
+        '-XMP-AnalogExif:Film="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
         '-GPSLatitude="51.2322" ' ..
         '-GPSLatitudeRef="N" ' ..
@@ -297,7 +312,7 @@ function testCustomMapping_Empty()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertNil (command)
 end
@@ -330,7 +345,7 @@ function testCustomMapping_SkipBadFormat()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertEquals(
         command,
@@ -366,7 +381,7 @@ function testCustomMapping_SkipAllBadFormat()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertNil (command)
 end
@@ -399,7 +414,7 @@ function testCustomMapping_Basic()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertEquals(
         command,
@@ -430,7 +445,7 @@ function testBasic_EffectiveISO_Box()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertEquals(
         command,
@@ -438,7 +453,7 @@ function testBasic_EffectiveISO_Box()
         '-Title="Roll 1" ' ..
         -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
-        '-Make="Kodak Gold" ' ..
+        '-XMP-AnalogExif:Film="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
         '-GPSLatitude="51.2322" ' ..
         '-GPSLatitudeRef="N" ' ..
@@ -479,7 +494,7 @@ function testBasic_EffectiveISO_Rated()
     }
 
     local meta = AnalogMetadata.make (photo)
-    local command = builder:buildCommand ("1.jpg", meta)
+    local command = formatArguments(builder, "1.jpg", meta)
 
     lu.assertEquals(
         command,
@@ -487,7 +502,7 @@ function testBasic_EffectiveISO_Rated()
         '-Title="Roll 1" ' ..
         -- '-Caption="Seaside" ' ..
         '-UserComment="Comment comment comment" ' ..
-        '-Make="Kodak Gold" ' ..
+        '-XMP-AnalogExif:Film="Kodak Gold" ' ..
         '-Model="Olympus XA" ' ..
         '-GPSLatitude="51.2322" ' ..
         '-GPSLatitudeRef="N" ' ..

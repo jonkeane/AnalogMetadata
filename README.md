@@ -38,6 +38,22 @@ Store detailed metadata for each individual frame:
 - **Smart Field Mapping**: Automatically maps Lightroom plugin fields to appropriate EXIF/XMP tags
 - **Batch Processing**: Process multiple photos efficiently during export
 
+In the export dialog, add **Export analog metadata** and use **Write film stock to**
+in the **Crown & Flint Metadata** section. The choice is saved with your export preset:
+
+- **XMP (AnalogExif:Film)** is the default, including for older presets without this
+  setting. It writes the full film-stock name to custom embedded XMP and preserves
+  the existing camera/scanner Make.
+- **Camera Make (compatibility workaround)** writes film stock into Make. This is
+  helpful when your export destination has limited EXIF support and does not read
+  custom XMP. It replaces the camera/scanner manufacturer with the film-stock name.
+
+XMP uses the `Film` string property in `http://analogexif.sourceforge.net/ns`.
+The bundled ExifTool configuration registers it as `XMP-AnalogExif:Film`.
+For example, Kodak Portra 400 rated at ISO 800 exports Film as `Kodak Portra 400`
+and ISO as `800`. Missing or blank film stock leaves existing Film and Make alone.
+Re-export photos to apply a changed setting; historical Make values are not cleared.
+
 ### Browsable and Searchable
 All metadata fields are:
 - **Browsable** in Lightroom's metadata panel

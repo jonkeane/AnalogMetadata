@@ -36,6 +36,7 @@ deliver : ${DELIVERY_ARCHIVE_PATH}
 
 ${DELIVERY_ARCHIVE_PATH}: \
 	${DELIVERY_DIR}/${REL_PLUGIN}/Config.txt \
+	${DELIVERY_DIR}/${REL_PLUGIN}/analog-film-exiftool.config \
 	${DELIVERY_DIR}/${REL_PLUGIN}/exiftool \
 	${DELIVERY_DIR}/${REL_PLUGIN}/LICENSE \
 	$(LUA_OBJECTS)
@@ -51,6 +52,9 @@ ${DELIVERY_DIR}/${REL_PLUGIN}/.stamp:
 
 ${DELIVERY_DIR}/${REL_PLUGIN}/Config.txt: | ${DELIVERY_DIR}/${REL_PLUGIN}/.stamp
 	cp ${DEV_PLUGIN}/Config.txt ${DELIVERY_DIR}/${REL_PLUGIN}
+
+${DELIVERY_DIR}/${REL_PLUGIN}/analog-film-exiftool.config: ${DEV_PLUGIN}/analog-film-exiftool.config | ${DELIVERY_DIR}/${REL_PLUGIN}/.stamp
+	cp $< $@
 
 ${DELIVERY_DIR}/${REL_PLUGIN}/exiftool: | ${DELIVERY_DIR}/${REL_PLUGIN}/.stamp
 	rm -rf $@
