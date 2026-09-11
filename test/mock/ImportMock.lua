@@ -1,6 +1,8 @@
 -- Provide a global import() compatible with Lightroom SDK for unit tests
 -- Maps module names to our mocks
 local map = {
+    LrView = function() return require('mock.LrViewMock') end,
+    LrUUID = function() return { generateUUID = function() return 'test-export' end } end,
     LrPathUtils = function() return require('mock.LrPathUtilsMock') end,
     LrFileUtils = function() return require('mock.LrFileUtilsMock') end,
     LrDate = function() return require('mock.LrDateMock') end,

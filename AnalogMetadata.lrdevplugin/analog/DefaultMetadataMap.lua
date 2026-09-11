@@ -3,7 +3,7 @@ local DefaultMetadataMap = {
     {key = "Title", val = "Roll_Name"},
     -- {key = "Caption", val = "Frame_Locality"},
     {key = "UserComment", val = "Frame_Comment"},
-    {key = "Make", val = "Frame_EmulsionName"},
+    {key = "XMP-AnalogExif:Film", val = "Frame_EmulsionName"},
     {key = "Model", val = "Roll_CameraName"},
     {key = "DateTime", val = "Frame_LocalTime"},
     {key = "DateTimeOriginal", val = "Frame_LocalTime"},

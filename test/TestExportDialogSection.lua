@@ -1,208 +1,46 @@
-local lu = require "luaunit"
-local LrViewMock = require "mock.LrViewMock"
-local ExportDialogSection = require "analog.ExportDialogSection"
+local lu = require 'luaunit'
+require 'mock.ImportMock'
+local LrViewMock = require 'mock.LrViewMock'
+local ExportDialogSection = require 'analog.ExportDialogSection'
+local ExportSettings = require 'analog.ExportSettings'
 
-function testEmpty()
-    lu.assertTrue(true)
+function testDefaultAndSavedChoice()
+    for _, initial in ipairs({'unset', 'xmp', 'make'}) do
+        local props = initial == 'unset' and {} or {filmStockDestination = initial}
+        local section = ExportDialogSection.make(LrViewMock.osFactory(), props)
+        lu.assertEquals(props.filmStockDestination, initial == 'unset' and 'xmp' or initial)
+        local column = section[1].args
+        lu.assertIs(column.bind_to_object, props)
+        local menu = column[1].args[2].args
+        lu.assertEquals(menu.value.key.key, 'filmStockDestination')
+        lu.assertEquals(menu.items[1].value, 'xmp')
+        lu.assertEquals(menu.items[2].value, 'make')
+        lu.assertStrContains(column[2].args.title, 'limited EXIF support')
+        lu.assertStrContains(column[2].args.title, 'replaces camera/scanner Make')
+    end
 end
 
-function testSectionForFilterInDialog()
-    local props = {}
-    local section = ExportDialogSection.make(LrViewMock.osFactory(), props)
+function testMapDoesNotLeakBetweenPresets()
+    lu.assertEquals(ExportSettings.presetFields, {{key = 'filmStockDestination', default = 'xmp'}})
+    for _, destination in ipairs({'make', 'xmp', 'unknown'}) do
+        local map = ExportSettings.metadataMap({filmStockDestination = destination})
+        lu.assertEquals(map[3].key, destination == 'make' and 'Make' or 'XMP-AnalogExif:Film')
+        lu.assertEquals(map[4].key, 'Model')
+    end
+    lu.assertEquals(ExportSettings.metadataMap()[3].key, 'XMP-AnalogExif:Film')
+end
 
-    lu.assertEquals(
-        section,
-        {
-            {
-                args = {
-                    {
-                        args = {
-                            {
-                                args = {fill_horizontal = 1, font = "<system/bold>", title = "Update tags:"},
-                                type = "static_text"
-                            },
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "Title"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Roll_Name"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    -- {
-                    --     args = {
-                    --         {args = {fill_horizontal = 1, title = "Caption"}, type = "static_text"},
-                    --         {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                    --         {args = {fill_horizontal = 1, title = "Frame_Locality"}, type = "static_text"},
-                    --         spacing = 0
-                    --     },
-                    --     type = "row"
-                    -- },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "UserComment"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_Comment"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "Make"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_EmulsionName"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "Model"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Roll_CameraName"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "DateTime"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LocalTime"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "DateTimeOriginal"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LocalTime"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "GPSLatitude"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_Latitude"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "GPSLatitudeRef"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LatitudeRef"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "GPSLongitude"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_Longitude"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "GPSLongitudeRef"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LongitudeRef"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "ISO"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_EffectiveISO"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "LensModel"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LensName"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "Lens"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_LensName"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "FocalLength"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_FocalLength"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "FNumber"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_FStop"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "ApertureValue"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_FStop"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "ExposureTime"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_Shutter"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    {
-                        args = {
-                            {args = {fill_horizontal = 1, title = "ShutterSpeedValue"}, type = "static_text"},
-                            {args = {font = "<system/bold>", title = "←"}, type = "static_text"},
-                            {args = {fill_horizontal = 1, title = "Frame_Shutter"}, type = "static_text"},
-                            spacing = 0
-                        },
-                        type = "row"
-                    },
-                    spacing = 0
-                },
-                type = "column"
-            },
-            title = "Crown & Flint Metadata"
-        }
-    )
+function testMappingLabelTracksSelection()
+    local view = {osFactory = LrViewMock.osFactory, bind = function(spec) return spec end}
+    local originalImport = import
+    _G.import = function(name) return name == 'LrView' and view or originalImport(name) end
+    local section = dofile('AnalogMetadata.lrdevplugin/analog/ExportDialogSection.lua')
+        .make(view.osFactory(), {})
+    _G.import = originalImport
+    local filmLabel = section[1].args[6].args[1].args.title
+    lu.assertEquals(filmLabel.key, 'filmStockDestination')
+    lu.assertEquals(filmLabel.transform('make'), 'Make')
+    lu.assertEquals(filmLabel.transform('xmp'), 'XMP-AnalogExif:Film')
 end
 
 os.exit(lu.LuaUnit.run())

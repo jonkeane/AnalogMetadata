@@ -1,62 +1,53 @@
 local LrPathUtils = import 'LrPathUtils'
+local LrFileUtils = import 'LrFileUtils'
 local LrTasks = import 'LrTasks'
+local LrUUID = import 'LrUUID'
 
 require 'Use'
 local log = require 'Logger' ('export')
-
 local AnalogMetadata = use 'analog.AnalogMetadata'
 local exiftool = use 'analog.ExiftoolBuilder'
-local DefaultMetadataMap = use 'analog.DefaultMetadataMap'
+local ExportSettings = use 'analog.ExportSettings'
 local ExportDialogSection = use 'analog.ExportDialogSection'
 
-local function postProcessRenderedPhotos (functionContext, filterContext)
-	log ('postProcessRenderedPhotos')
+local function postProcessRenderedPhotos(functionContext, filterContext)
+    local builder = exiftool.make(ExportSettings.metadataMap(filterContext.propertyTable))
+    local argumentFilePath = LrPathUtils.child(LrPathUtils.getStandardFilePath('temp'),
+        'analog-metadata-' .. LrUUID.generateUUID() .. '.args')
+    functionContext:addCleanupHandler(function()
+        LrFileUtils.delete(argumentFilePath)
+    end)
 
-    local builder = exiftool.make (DefaultMetadataMap)
-
-	log ('renditions')
-	for sourceRendition, renditionToSatisfy in filterContext:renditions( renditionOptions ) do
-		-- Wait for the upstream task to finish its work on this photo.
-		
-		log ('Wait: ', sourceRendition.photo.localIdentifier)
-		local success, pathOrError = sourceRendition:waitForRender()
-		
-		if success then
-			-- Now that the photo is completed and available to this filter, you can do your work on the photo here.
-			-- In this example, the renditions are passed to an external application that updates the Creator metadata
-            -- with the entry added in the export dialog section.
-
-			log ('Write: ', pathOrError)
-
-            local command = builder:buildCommand (
-                sourceRendition.destinationPath,
-                AnalogMetadata.make (sourceRendition.photo)
-            )
-			if command then
-				local exiftoolResult = LrTasks.execute (command)
-				if  exiftoolResult ~= 0 then
-					log ('Exiftool: ret: ', exiftoolResult)
-					renditionToSatisfy:renditionIsDone( false, "Failed to execute Exiftool" )
-				else
-					log  ('Exiftool: OK')
-				end
-			else
-				log ('Exiftool: skip empty')
-			end
+    for sourceRendition, renditionToSatisfy in filterContext:renditions() do
+        local success, pathOrError = sourceRendition:waitForRender()
+        if success then
+            local arguments = builder:buildArguments(pathOrError, AnalogMetadata.make(sourceRendition.photo))
+            if arguments then
+                local file, errorMessage = io.open(argumentFilePath, 'wb')
+                if file then
+                    local written, writeError = file:write(builder:argumentFileContents(arguments))
+                    local closed, closeError = file:close()
+                    if written and closed then
+                        local result = LrTasks.execute(builder:buildCommand(argumentFilePath))
+                        if result ~= 0 then
+                            renditionToSatisfy:renditionIsDone(false, 'Failed to execute ExifTool')
+                        end
+                    else
+                        renditionToSatisfy:renditionIsDone(false, writeError or closeError)
+                    end
+                else
+                    renditionToSatisfy:renditionIsDone(false, errorMessage)
+                end
+                LrFileUtils.delete(argumentFilePath)
+            end
         else
-            log ("waitForRender: error: ", pathOrError)
-		end	
-	end
-	log ("DONE")
-end
-
-local function sectionForFilterInDialog (f, propertyTable )
-	log ('sectionForFilterInDialog')
-    return ExportDialogSection.make (f, propertyTable)
+            log('waitForRender: error: ', pathOrError)
+        end
+    end
 end
 
 return {
     postProcessRenderedPhotos = postProcessRenderedPhotos,
-	--exportPresetFields = exportPresetFields,
-	sectionForFilterInDialog = sectionForFilterInDialog,
+    exportPresetFields = ExportSettings.presetFields,
+    sectionForFilterInDialog = ExportDialogSection.make,
 }
