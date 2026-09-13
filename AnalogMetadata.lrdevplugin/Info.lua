@@ -18,10 +18,15 @@ local Info = {
 		--'AllMetadataTagset.lua',
 	},
 
-    LrLibraryMenuItems = {
+	LrLibraryMenuItems = {
 		{
 			title = 'Import Analog Metadata ...',
 			file = 'Import.lua',
+			enabledWhen = 'photosAvailable',
+		},
+		{
+			title = 'Import Film Shots Metadata for Selected Photos',
+			file = 'ImportFilmShotsMetadata.lua',
 			enabledWhen = 'photosAvailable',
 		},
 	},
